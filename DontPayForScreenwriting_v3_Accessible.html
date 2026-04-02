@@ -1,0 +1,2633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Don't Pay for Screenwriting Software — Accessible Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+  :root {
+    --bg: #1a1a1f;
+    --surface: #23232b;
+    --surface2: #2c2c36;
+    --border: #3a3a48;
+    --accent: #f5c842;
+    --accent2: #e8a020;
+    --text: #e8e8f0;
+    --text-dim: #8888a0;
+    --page-bg: #ffffff;
+    --page-text: #000000;
+    --sidebar-w: 260px;
+    --toolbar-h: 52px;
+    --statusbar-h: 28px;
+  }
+  .light-mode {
+    --bg: #f0f0f5;
+    --surface: #ffffff;
+    --surface2: #e8e8f0;
+    --border: #ccccdd;
+    --text: #1a1a2e;
+    --text-dim: #666688;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ─── TOOLBAR ─── */
+  #toolbar {
+    height: var(--toolbar-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 4px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  #logo {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    margin-right: 12px;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+  .tb-sep { width: 1px; height: 24px; background: var(--border); margin: 0 6px; }
+  .tb-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-dim);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .tb-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
+  .tb-btn.active { background: var(--accent); color: #000; font-weight: 600; border-color: var(--accent); }
+  .tb-btn.danger { color: #ff6b6b; }
+  .tb-btn.danger:hover { background: rgba(255,107,107,0.12); border-color: #ff6b6b; }
+  #title-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    text-align: center;
+    max-width: 280px;
+    margin: 0 8px;
+  }
+  #title-input:focus { outline: none; border-color: var(--accent); }
+
+  /* ─── ELEMENT SELECTOR ─── */
+  #element-bar {
+    height: 38px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 4px;
+    flex-shrink: 0;
+    overflow-x: auto;
+  }
+  .el-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-dim);
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .el-btn:hover { background: var(--surface); color: var(--text); }
+  .el-btn.active { background: var(--accent); color: #000; font-weight: 600; border-color: var(--accent); }
+  #element-label {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    padding: 0 8px;
+  }
+
+  /* ─── MAIN LAYOUT ─── */
+  #main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ─── SIDEBAR ─── */
+  #sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: width 0.2s;
+    overflow: hidden;
+  }
+  #sidebar.collapsed { width: 0; }
+  #sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .stab {
+    flex: 1;
+    padding: 8px 0;
+    text-align: center;
+    font-size: 11px;
+    cursor: pointer;
+    color: var(--text-dim);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .stab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  #sidebar-content { flex: 1; overflow-y: auto; padding: 8px; }
+  .scene-item {
+    padding: 6px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text-dim);
+    transition: all 0.12s;
+    margin-bottom: 2px;
+    line-height: 1.4;
+  }
+  .scene-item:hover { background: var(--surface2); color: var(--text); }
+  .scene-item .scene-num { color: var(--accent); font-weight: 600; margin-right: 4px; }
+  .char-item {
+    padding: 5px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text);
+    background: var(--surface2);
+    margin-bottom: 3px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .char-count { color: var(--accent); font-size: 10px; }
+  #notes-area {
+    width: 100%;
+    flex: 1;
+    background: var(--surface2);
+    border: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 10px;
+    resize: none;
+    outline: none;
+  }
+
+  /* ─── EDITOR AREA ─── */
+  #editor-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px 60px;
+    position: relative;
+  }
+  #page-container {
+    width: 100%;
+    max-width: 780px;
+  }
+  .page {
+    background: var(--page-bg);
+    width: 100%;
+    min-height: 1056px;
+    padding: 96px 96px 96px 144px; /* 1" margins, 1.5" left */
+    margin-bottom: 20px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.35);
+    border-radius: 2px;
+    position: relative;
+  }
+  .page-number {
+    position: absolute;
+    top: 48px;
+    right: 96px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 12pt;
+    color: #333;
+  }
+
+  /* ─── SCREENPLAY LINES ─── */
+  .script-line {
+    font-family: 'Courier Prime', monospace;
+    font-size: 12pt;
+    line-height: 1;
+    color: var(--page-text);
+    min-height: 1em;
+    outline: none;
+    white-space: pre-wrap;
+    word-break: break-word;
+    caret-color: #0066cc;
+  }
+  .script-line::before {
+    content: '';
+    display: block;
+  }
+  .script-line[data-type="scene-heading"] {
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+  .script-line[data-type="action"] {
+    margin-top: 12px;
+    margin-bottom: 12px;
+  }
+  .script-line[data-type="character"] {
+    margin-left: 180px;
+    margin-top: 12px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .script-line[data-type="parenthetical"] {
+    margin-left: 120px;
+    margin-right: 120px;
+  }
+  .script-line[data-type="dialogue"] {
+    margin-left: 100px;
+    margin-right: 100px;
+    margin-bottom: 0;
+  }
+  .script-line[data-type="transition"] {
+    text-align: right;
+    text-transform: uppercase;
+    margin-top: 12px;
+    margin-bottom: 12px;
+  }
+  .script-line[data-type="centered"] {
+    text-align: center;
+  }
+  .script-line.focused-line {
+    background: rgba(0,102,204,0.06);
+  }
+  .script-line[data-type="scene-heading"].focused-line {
+    background: rgba(245,200,66,0.08);
+  }
+
+  /* placeholder text */
+  .script-line:empty::after {
+    color: #bbb;
+    font-style: italic;
+    font-weight: 400;
+    text-transform: none;
+    margin-left: 0;
+  }
+  .script-line[data-type="scene-heading"]:empty::after { content: 'INT./EXT. LOCATION - DAY/NIGHT'; }
+  .script-line[data-type="action"]:empty::after { content: 'Action / description...'; }
+  .script-line[data-type="character"]:empty::after { content: 'CHARACTER NAME'; }
+  .script-line[data-type="parenthetical"]:empty::after { content: '(beat)'; }
+  .script-line[data-type="dialogue"]:empty::after { content: 'Dialogue...'; }
+  .script-line[data-type="transition"]:empty::after { content: 'CUT TO:'; }
+  .script-line[data-type="centered"]:empty::after { content: 'Centered text...'; }
+
+  /* ─── AUTOCOMPLETE ─── */
+  #autocomplete {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 9999;
+    min-width: 200px;
+    max-width: 360px;
+    display: none;
+    overflow: hidden;
+  }
+  .ac-item {
+    padding: 7px 12px;
+    font-size: 12px;
+    font-family: 'Courier Prime', monospace;
+    cursor: pointer;
+    color: var(--text);
+    transition: background 0.1s;
+  }
+  .ac-item:hover, .ac-item.selected { background: var(--accent); color: #000; }
+  .ac-header {
+    padding: 4px 12px;
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ─── TITLE PAGE MODAL ─── */
+  #modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+  #modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    width: 480px;
+    max-width: 95vw;
+  }
+  #modal h2 { font-size: 16px; margin-bottom: 20px; color: var(--accent); }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .modal-field input, .modal-field textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+  .modal-field input:focus, .modal-field textarea:focus { outline: none; border-color: var(--accent); }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .modal-btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    background: var(--surface2);
+    color: var(--text);
+    transition: all 0.15s;
+  }
+  .modal-btn.primary { background: var(--accent); color: #000; font-weight: 600; border-color: var(--accent); }
+  .modal-btn:hover { opacity: 0.85; }
+
+  /* ─── STATUS BAR ─── */
+  #statusbar {
+    height: var(--statusbar-h);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 20px;
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  #statusbar span { display: flex; align-items: center; gap: 5px; }
+  #save-indicator { transition: color 0.3s; }
+  #save-indicator.saved { color: #4caf82; }
+  #save-indicator.unsaved { color: var(--accent); }
+
+  /* ─── TITLE PAGE ─── */
+  .title-page-block {
+    text-align: center;
+    font-family: 'Courier Prime', monospace;
+    font-size: 12pt;
+    color: var(--page-text);
+    margin-bottom: 20px;
+    padding: 96px 0 60px;
+    min-height: 800px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+  .title-page-title { font-size: 14pt; font-weight: 700; text-transform: uppercase; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+  /* ─── FIND/REPLACE ─── */
+  #find-bar {
+    position: fixed;
+    top: calc(var(--toolbar-h) + 38px + 10px);
+    right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 200;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    min-width: 280px;
+  }
+  #find-bar.open { display: flex; }
+  .find-row { display: flex; gap: 6px; align-items: center; }
+  .find-row input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .find-row input:focus { outline: none; border-color: var(--accent); }
+  .find-row button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .find-row button:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+  .find-label { font-size: 10px; color: var(--text-dim); width: 50px; }
+
+  mark { background: rgba(245,200,66,0.4); border-radius: 2px; }
+
+  /* ─── IMPORT MODAL ─── */
+  #import-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 600;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  #import-overlay.open { display: flex; }
+  #import-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0;
+    width: 560px;
+    max-width: 96vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  }
+  #import-header {
+    padding: 22px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #import-header h2 { font-size: 15px; color: var(--accent); }
+  #import-close {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 18px; line-height: 1;
+  }
+  #import-body { flex: 1; overflow-y: auto; padding: 20px 28px; }
+  #import-footer {
+    padding: 14px 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  /* Drop zone */
+  #drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  #drop-zone:hover, #drop-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(245,200,66,0.05);
+  }
+  #drop-zone .dz-icon { font-size: 32px; margin-bottom: 10px; }
+  #drop-zone .dz-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  #drop-zone .dz-sub { font-size: 11px; color: var(--text-dim); }
+  #drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+
+  /* Progress / status */
+  #import-progress {
+    display: none;
+    margin-bottom: 14px;
+  }
+  #import-progress.visible { display: block; }
+  .progress-step {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 0;
+    font-size: 12px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+  .progress-step:last-child { border-bottom: none; }
+  .progress-step .step-icon { width: 20px; text-align: center; flex-shrink: 0; }
+  .progress-step.done { color: #4caf82; }
+  .progress-step.active { color: var(--accent); }
+  .progress-step.error { color: #ff6b6b; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { display: inline-block; animation: spin 0.8s linear infinite; }
+
+  /* Preview */
+  #import-preview {
+    display: none;
+    margin-top: 14px;
+  }
+  #import-preview.visible { display: block; }
+  #import-preview h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 8px; }
+  #preview-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .preview-scene { color: var(--accent); font-weight: 700; }
+  .preview-char { color: #7ec8e3; font-weight: 700; margin-left: 3em; }
+  .preview-dial { margin-left: 2em; }
+  .preview-paren { margin-left: 2.5em; color: var(--text-dim); }
+  .preview-trans { text-align: right; color: #c8a87e; }
+  #import-stats {
+    display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap;
+  }
+  .istat {
+    font-size: 11px; color: var(--text-dim);
+    background: var(--surface2);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+  .istat span { color: var(--accent); font-weight: 600; }
+  /* ─── ACCESSIBILITY ENHANCEMENTS ─── */
+
+  /* Skip link for keyboard users */
+  .skip-link {
+    position: absolute; left: -9999px; top: 4px; z-index: 99999;
+    background: var(--accent); color: #000; padding: 8px 16px;
+    border-radius: 6px; font-weight: 700; font-size: 14px;
+    text-decoration: none; white-space: nowrap;
+  }
+  .skip-link:focus { left: 12px; outline: 3px solid #000; outline-offset: 2px; }
+
+  /* High-visibility focus rings — never hidden */
+  *:focus-visible {
+    outline: 3px solid var(--accent) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 5px rgba(245,200,66,0.3) !important;
+  }
+  .script-line:focus-visible {
+    outline: 3px solid #2563eb !important;
+    outline-offset: 1px !important;
+    box-shadow: 0 0 0 5px rgba(37,99,235,0.25) !important;
+  }
+  /* Remove broken outline:none on inputs */
+  #title-input:focus { outline: 3px solid var(--accent) !important; border-color: var(--accent); }
+  .modal-field input:focus, .modal-field textarea:focus, .find-row input:focus {
+    outline: 3px solid var(--accent) !important; border-color: var(--accent) !important;
+  }
+  #notes-area:focus { outline: 3px solid var(--accent) !important; }
+
+  /* Minimum touch targets */
+  .tb-btn { min-height: 36px; }
+  .el-btn { min-height: 32px; }
+  .stab { min-height: 36px; }
+  .modal-btn { min-height: 40px; min-width: 80px; }
+  .scene-item { min-height: 32px; display: flex; align-items: center; }
+
+  /* Stronger focused-line indicator */
+  .script-line.focused-line { background: rgba(37,99,235,0.07); border-left: 3px solid #2563eb; padding-left: 3px; }
+  .script-line[data-type="scene-heading"].focused-line { background: rgba(245,200,66,0.1); border-left: 3px solid var(--accent); }
+
+  /* Current element type badge in status bar */
+  #current-type-badge {
+    background: rgba(245,200,66,0.15); color: var(--accent);
+    border: 1px solid rgba(245,200,66,0.35);
+    border-radius: 4px; padding: 1px 8px;
+    font-weight: 600; font-size: 11px; letter-spacing: 0.3px;
+  }
+
+  /* Font-size controls */
+  #a11y-controls { display: flex; align-items: center; gap: 3px; }
+  #a11y-controls button {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 5px; width: 26px; height: 26px; font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  #a11y-controls button:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+  #font-size-label { font-size: 11px; color: var(--text-dim); min-width: 30px; text-align: center; }
+
+  /* High-contrast mode support */
+  @media (forced-colors: active) {
+    .tb-btn, .el-btn, .modal-btn { border: 2px solid ButtonText !important; }
+    .tb-btn.active, .el-btn.active { forced-color-adjust: none; background: Highlight !important; color: HighlightText !important; }
+    .script-line { forced-color-adjust: none; }
+    .script-line.focused-line { border-left: 3px solid Highlight !important; background: transparent !important; }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+    .spinner { animation: none !important; }
+  }
+
+  /* Prefer-contrast: more — boost contrast */
+  @media (prefers-contrast: more) {
+    :root { --text-dim: #aaaacc; --border: #666680; }
+    .light-mode { --text-dim: #444466; --border: #888899; }
+  }
+
+  /* Screen-reader-only utility */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0;
+    margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#editor-wrapper">Skip to editor</a>
+<div id="sr-live" aria-live="polite" aria-atomic="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;"></div>
+
+<!-- TOOLBAR -->
+<div id="toolbar" role="toolbar" aria-label="Main toolbar">
+  <div id="logo" aria-label="Don't Pay for Screenwriting Software by Inwood Park Productions">Don't Pay for Screenwriting Software.<span style="display:block;font-size:9px;font-weight:400;color:var(--text-dim);letter-spacing:0.3px;margin-top:1px;" aria-hidden="true">made by Inwood Park Productions</span></div>
+  <div class="tb-sep" role="separator" aria-hidden="true"></div>
+  <button class="tb-btn" onclick="newScript()" aria-label="New script (Ctrl+N)" aria-keyshortcuts="Control+N">New</button>
+  <button class="tb-btn" onclick="saveToFile()" aria-label="Save script to file (Ctrl+S)" aria-keyshortcuts="Control+S">Save</button>
+  <button class="tb-btn" onclick="loadFromFile()" aria-label="Open script from file">Open</button>
+  <button class="tb-btn" style="color:var(--accent);border-color:rgba(245,200,66,0.3)" onclick="openImportModal()" aria-label="Import script from PDF or DOCX file">⬆ Import PDF/DOCX</button>
+  <input type="file" id="file-input" accept=".sfx,.txt,.fountain,.fdx" style="display:none" onchange="handleFileLoad(event)" aria-label="Choose script file">
+  <div class="tb-sep" role="separator" aria-hidden="true"></div>
+  <button class="tb-btn" onclick="openTitlePageModal()" aria-label="Edit title page">Title Page</button>
+  <button class="tb-btn" onclick="toggleFindBar()" aria-label="Open find and replace panel (Ctrl+F)" aria-keyshortcuts="Control+F">Find/Replace</button>
+  <div class="tb-sep" role="separator" aria-hidden="true"></div>
+  <label class="sr-only" for="title-input">Script title</label>
+  <input type="text" id="title-input" placeholder="Untitled Screenplay" value="Untitled Screenplay" oninput="markUnsaved()" aria-label="Script title">
+  <div class="tb-sep" role="separator" aria-hidden="true"></div>
+  <button class="tb-btn" onclick="exportPDF()" aria-label="Export script as PDF file">Export PDF</button>
+  <button class="tb-btn" onclick="exportFountain()" aria-label="Export script as Fountain plain-text format">Export .fountain</button>
+  <button class="tb-btn" onclick="exportFDX()" aria-label="Export script as Final Draft FDX format">Export .fdx</button>
+  <div class="tb-sep" role="separator" aria-hidden="true"></div>
+  <div id="a11y-controls" role="group" aria-label="Font size controls">
+    <button onclick="changeEditorFontSize(-1)" aria-label="Decrease editor font size">A−</button>
+    <span id="font-size-label" aria-live="polite" aria-label="Current font size">12pt</span>
+    <button onclick="changeEditorFontSize(1)" aria-label="Increase editor font size">A+</button>
+  </div>
+  <div class="tb-sep" role="separator" aria-hidden="true"></div>
+  <button class="tb-btn" onclick="toggleSidebar()" aria-label="Toggle navigation panels" id="sidebar-toggle-btn" aria-expanded="true">☰ Panels</button>
+  <button class="tb-btn" onclick="toggleDark()" aria-label="Toggle light and dark theme">◑ Theme</button>
+</div>
+
+<!-- ELEMENT BAR -->
+<div id="element-bar" role="toolbar" aria-label="Element type selector — Tab to cycle, or click to choose">
+  <span style="font-size:11px;color:var(--text-dim);margin-right:4px;" aria-hidden="true">Element:</span>
+  <button class="el-btn" data-type="scene-heading" onclick="setElementType('scene-heading')" aria-pressed="false" aria-label="Scene Heading — INT/EXT location">Scene Heading</button>
+  <button class="el-btn" data-type="action" onclick="setElementType('action')" aria-pressed="false" aria-label="Action — description and stage direction">Action</button>
+  <button class="el-btn active" data-type="character" onclick="setElementType('character')" aria-pressed="true" aria-label="Character name">Character</button>
+  <button class="el-btn" data-type="parenthetical" onclick="setElementType('parenthetical')" aria-pressed="false" aria-label="Parenthetical — acting note in parentheses">Parenthetical</button>
+  <button class="el-btn" data-type="dialogue" onclick="setElementType('dialogue')" aria-pressed="false" aria-label="Dialogue — spoken words">Dialogue</button>
+  <button class="el-btn" data-type="transition" onclick="setElementType('transition')" aria-pressed="false" aria-label="Transition — e.g. CUT TO">Transition</button>
+  <button class="el-btn" data-type="centered" onclick="setElementType('centered')" aria-pressed="false" aria-label="Centered text">Centered</button>
+  <span id="element-label" aria-hidden="true">Tab: cycle element type &nbsp;|&nbsp; Enter: next line</span>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <!-- SIDEBAR -->
+  <nav id="sidebar" aria-label="Script outline and notes">
+    <div id="sidebar-tabs" role="tablist">
+      <div class="stab active" role="tab" tabindex="0" aria-selected="true" aria-controls="tab-scenes" onclick="switchSidebarTab('scenes',this)" onkeydown="handleTabKey(event,this)">Scenes</div>
+      <div class="stab" role="tab" tabindex="-1" aria-selected="false" aria-controls="tab-characters" onclick="switchSidebarTab('characters',this)" onkeydown="handleTabKey(event,this)">Characters</div>
+      <div class="stab" role="tab" tabindex="-1" aria-selected="false" aria-controls="tab-notes" onclick="switchSidebarTab('notes',this)" onkeydown="handleTabKey(event,this)">Notes</div>
+    </div>
+    <div id="sidebar-content">
+      <div id="tab-scenes" role="tabpanel" aria-label="Scene list"></div>
+      <div id="tab-characters" role="tabpanel" aria-label="Character list" style="display:none"></div>
+      <div id="tab-notes" role="tabpanel" aria-label="Production notes" style="display:none">
+        <textarea id="notes-area" placeholder="Production notes, story ideas, reminders..." aria-label="Production notes"></textarea>
+      </div>
+    </div>
+  </nav>
+
+  <!-- EDITOR -->
+  <div id="editor-wrapper" tabindex="-1">
+    <div id="page-container">
+      <div class="page" id="page-1" role="region" aria-label="Script page 1">
+        <div class="page-number" aria-hidden="true">1.</div>
+        <!-- lines inserted here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div id="statusbar" role="status" aria-live="off">
+  <span id="save-indicator" class="saved" aria-live="polite">● Saved</span>
+  <span id="stat-pages" aria-label="Estimated page count">Pages: 1</span>
+  <span id="stat-scenes" aria-label="Scene count">Scenes: 0</span>
+  <span id="stat-words" aria-label="Word count">Words: 0</span>
+  <span id="stat-chars" aria-label="Unique character count">Characters: 0</span>
+  <span id="current-type-badge" aria-live="polite" aria-label="Current line element type">Scene Heading</span>
+  <span style="margin-left:auto;font-size:10px;" aria-hidden="true">Don't Pay for Screenwriting Software. &nbsp;|&nbsp; v2-accessible &nbsp;|&nbsp; Autosave on</span>
+</div>
+
+<!-- AUTOCOMPLETE -->
+<div id="autocomplete" role="listbox" aria-label="Autocomplete suggestions" aria-hidden="true"></div>
+
+<!-- FIND/REPLACE -->
+<div id="find-bar" role="search" aria-label="Find and replace">
+  <div class="find-row">
+    <label class="find-label" for="find-input">Find</label>
+    <input type="search" id="find-input" placeholder="Search..." aria-label="Search text" autocomplete="off">
+    <button onclick="findNext()" aria-label="Find next match (Enter)">↓</button>
+    <button onclick="findPrev()" aria-label="Find previous match">↑</button>
+    <button onclick="closeFindBar()" style="color:#ff6b6b;" aria-label="Close find and replace">✕</button>
+  </div>
+  <div class="find-row">
+    <label class="find-label" for="replace-input">Replace</label>
+    <input type="text" id="replace-input" placeholder="Replace with..." aria-label="Replacement text" autocomplete="off">
+    <button onclick="replaceOne()" aria-label="Replace current match">Replace</button>
+    <button onclick="replaceAll()" aria-label="Replace all matches">All</button>
+  </div>
+  <div style="font-size:10px;color:var(--text-dim)" id="find-status" role="status" aria-live="polite"></div>
+</div>
+
+<!-- TITLE PAGE MODAL -->
+<div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div id="modal">
+    <h2 id="modal-title">Title Page</h2>
+    <div class="modal-field">
+      <label for="tp-title">Title</label>
+      <input type="text" id="tp-title" placeholder="MY SCREENPLAY" aria-required="true">
+    </div>
+    <div class="modal-field">
+      <label for="tp-author">Written by</label>
+      <input type="text" id="tp-author" placeholder="Your Name">
+    </div>
+    <div class="modal-field">
+      <label for="tp-based">Based on (optional)</label>
+      <input type="text" id="tp-based" placeholder="e.g. Based on a true story">
+    </div>
+    <div class="modal-field">
+      <label for="tp-contact">Contact / Draft Info</label>
+      <input type="text" id="tp-contact" placeholder="email@example.com · First Draft · 2025">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="closeTitlePageModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="insertTitlePage()">Insert Title Page</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div id="import-overlay" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+  <div id="import-modal">
+    <div id="import-header">
+      <h2 id="import-modal-title">⬆ Import Script — PDF or DOCX</h2>
+      <button id="import-close" onclick="closeImportModal()">✕</button>
+    </div>
+    <div id="import-body">
+
+      <!-- Drop zone -->
+      <div id="drop-zone" ondragover="dzDragOver(event)" ondragleave="dzDragLeave(event)" ondrop="dzDrop(event)">
+        <input type="file" id="import-file-input" accept=".pdf,.docx,.doc,.txt,.fountain,.fdx" onchange="handleImportFile(event)">
+        <div class="dz-icon">📄</div>
+        <div class="dz-title">Drop your script here</div>
+        <div class="dz-sub">PDF, DOCX, FDX, TXT, or .fountain &nbsp;·&nbsp; Click to browse</div>
+      </div>
+
+      <!-- Progress steps -->
+      <div id="import-progress">
+        <div class="progress-step" id="step-extract">
+          <span class="step-icon">○</span>
+          <span>Extracting text from file</span>
+        </div>
+        <div class="progress-step" id="step-analyze">
+          <span class="step-icon">○</span>
+          <span>Analyzing document structure &amp; formatting</span>
+        </div>
+        <div class="progress-step" id="step-reformat">
+          <span class="step-icon">○</span>
+          <span>Smart reformatting to screenplay standard</span>
+        </div>
+        <div class="progress-step" id="step-load">
+          <span class="step-icon">○</span>
+          <span>Loading into editor</span>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div id="import-preview">
+        <h3>Preview (first 30 elements)</h3>
+        <div id="preview-box"></div>
+        <div id="import-stats"></div>
+      </div>
+
+    </div>
+    <div id="import-footer">
+      <span id="import-footer-msg" style="font-size:11px;color:var(--text-dim);margin-right:auto;"></span>
+      <button class="modal-btn" onclick="closeImportModal()">Cancel</button>
+      <button class="modal-btn primary" id="import-apply-btn" onclick="applyImport()" style="display:none">Apply to Editor</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// IMPORT ENGINE
+// ═══════════════════════════════════════════════════════
+
+// PDF.js worker
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+let importedLines = []; // staging area before applying
+
+function openImportModal() {
+  document.getElementById('import-overlay').classList.add('open');
+  resetImportUI();
+}
+function closeImportModal() {
+  document.getElementById('import-overlay').classList.remove('open');
+}
+function resetImportUI() {
+  importedLines = [];
+  document.getElementById('import-progress').classList.remove('visible');
+  document.getElementById('import-preview').classList.remove('visible');
+  document.getElementById('import-apply-btn').style.display = 'none';
+  document.getElementById('import-footer-msg').textContent = '';
+  document.getElementById('import-file-input').value = '';
+  ['step-extract','step-analyze','step-reformat','step-load'].forEach(id => {
+    const el = document.getElementById(id);
+    el.className = 'progress-step';
+    el.querySelector('.step-icon').textContent = '○';
+  });
+}
+
+// Drag/drop
+function dzDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function dzDragLeave(e) { document.getElementById('drop-zone').classList.remove('drag-over'); }
+function dzDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processImportFile(file);
+}
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (file) processImportFile(file);
+}
+
+// ── STEP HELPERS ──
+function setStep(id, state) {
+  const el = document.getElementById(id);
+  el.className = 'progress-step ' + state;
+  const icons = { done: '✓', active: '<span class="spinner">⟳</span>', error: '✗', '': '○' };
+  el.querySelector('.step-icon').innerHTML = icons[state] || '○';
+}
+
+// ── MAIN IMPORT PIPELINE ──
+async function processImportFile(file) {
+  resetImportUI();
+  document.getElementById('import-progress').classList.add('visible');
+  document.getElementById('import-footer-msg').textContent = 'Processing...';
+
+  try {
+    // STEP 1: Extract text
+    setStep('step-extract', 'active');
+    let rawText = '';
+    let structureHints = []; // hints from DOCX styles
+
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    if (ext === 'fdx') {
+      // FDX is structured XML — parse directly, skip analysis/reformat steps
+      setStep('step-extract', 'done');
+      setStep('step-analyze', 'active');
+      const xmlText = await readAsText(file);
+      const formatted = parseFDX(xmlText);
+      setStep('step-analyze', 'done');
+      setStep('step-reformat', 'done');
+      setStep('step-load', 'active');
+      importedLines = formatted;
+      renderImportPreview(formatted);
+      setStep('step-load', 'done');
+      document.getElementById('import-footer-msg').textContent =
+        `✓ Ready — ${formatted.length} elements from Final Draft file`;
+      document.getElementById('import-apply-btn').style.display = '';
+      return;
+    } else if (ext === 'pdf') {
+      rawText = await extractPDF(file);
+    } else if (ext === 'docx' || ext === 'doc') {
+      const result = await extractDOCX(file);
+      rawText = result.text;
+      structureHints = result.hints;
+    } else {
+      // .txt / .fountain - read as text
+      rawText = await readAsText(file);
+    }
+
+    if (!rawText.trim()) throw new Error('No text could be extracted from the file.');
+    setStep('step-extract', 'done');
+
+    // STEP 2: Analyze structure
+    setStep('step-analyze', 'active');
+    const analysis = analyzeRawText(rawText, structureHints);
+    setStep('step-analyze', 'done');
+
+    // STEP 3: Reformat (free, fully local)
+    setStep('step-reformat', 'active');
+    let formatted = smartReformat(analysis);
+    setStep('step-reformat', 'done');
+
+    // STEP 4: Stage and preview
+    setStep('step-load', 'active');
+    importedLines = formatted;
+    renderImportPreview(formatted);
+    setStep('step-load', 'done');
+
+    document.getElementById('import-footer-msg').textContent =
+      `✓ Ready — ${formatted.length} elements detected`;
+    document.getElementById('import-apply-btn').style.display = '';
+
+  } catch (err) {
+    ['step-extract','step-analyze','step-reformat','step-load'].forEach(id => {
+      if (document.getElementById(id).classList.contains('active'))
+        setStep(id, 'error');
+    });
+    document.getElementById('import-footer-msg').textContent = '⚠ ' + err.message;
+    console.error('Import error:', err);
+  }
+}
+
+// ── TEXT EXTRACTION ──
+function readAsText(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = () => rej(new Error('Could not read file.'));
+    r.readAsText(file);
+  });
+}
+
+async function extractPDF(file) {
+  if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js failed to load. Please check your internet connection.');
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+  let fullText = '';
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    // Reconstruct lines using y-position grouping
+    const items = tc.items;
+    const yGroups = {};
+    items.forEach(item => {
+      if (!item.str.trim()) return;
+      const y = Math.round(item.transform[5]);
+      if (!yGroups[y]) yGroups[y] = { x: item.transform[4], parts: [] };
+      yGroups[y].parts.push({ x: item.transform[4], text: item.str });
+    });
+    const ys = Object.keys(yGroups).map(Number).sort((a, b) => b - a);
+    ys.forEach(y => {
+      const g = yGroups[y];
+      const sorted = g.parts.sort((a, b) => a.x - b.x);
+      const lineText = sorted.map(p => p.text).join(' ').replace(/\s+/g, ' ').trim();
+      if (lineText) fullText += lineText + '\n';
+    });
+    fullText += '\n'; // page break
+  }
+  return fullText;
+}
+
+async function extractDOCX(file) {
+  if (typeof mammoth === 'undefined') throw new Error('mammoth.js failed to load. Please check your internet connection.');
+  const ab = await file.arrayBuffer();
+  // Extract with style names preserved
+  const result = await mammoth.extractRawText({ arrayBuffer: ab });
+  // Also get HTML for style hints
+  let hints = [];
+  try {
+    const htmlResult = await mammoth.convertToHtml({ arrayBuffer: ab });
+    hints = parseDocxHints(htmlResult.value);
+  } catch(e) {}
+  return { text: result.value, hints };
+}
+
+function parseDocxHints(html) {
+  // Extract structural hints from mammoth HTML output
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const hints = [];
+  div.querySelectorAll('p, h1, h2, h3, h4').forEach(el => {
+    const text = el.innerText.trim();
+    if (!text) return;
+    let hint = 'action';
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'h1' || tag === 'h2') hint = 'scene-heading';
+    else if (tag === 'h3') hint = 'character';
+    else if (tag === 'h4') hint = 'parenthetical';
+    else if (el.style.textAlign === 'center') hint = 'centered';
+    hints.push({ text, hint });
+  });
+  return hints;
+}
+
+// ── STRUCTURE ANALYSIS ──
+function analyzeRawText(raw, structureHints) {
+  const rawLines = raw.split('\n').map(l => l.trimEnd());
+
+  // Measure indentation distribution
+  const indentCounts = {};
+  rawLines.forEach(l => {
+    if (!l.trim()) return;
+    const indent = l.length - l.trimStart().length;
+    indentCounts[indent] = (indentCounts[indent] || 0) + 1;
+  });
+
+  // Detect common indent levels
+  const indentLevels = Object.entries(indentCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k]) => parseInt(k));
+
+  // Assign roles to indent levels heuristically
+  const baseIndent = indentLevels[0] || 0;
+
+  // Build annotated lines
+  const annotated = [];
+  let prevBlank = true;
+
+  rawLines.forEach((raw, i) => {
+    const trimmed = raw.trim();
+    if (!trimmed) { prevBlank = true; return; }
+    const indent = raw.length - raw.trimStart().length;
+
+    // Check for hint from DOCX
+    const hint = structureHints.find(h => h.text === trimmed);
+
+    let type = guessType(trimmed, indent, baseIndent, prevBlank, hint?.hint);
+    annotated.push({ text: trimmed, type, indent, raw });
+    prevBlank = false;
+  });
+
+  return { lines: annotated, baseIndent, indentLevels };
+}
+
+function guessType(text, indent, baseIndent, prevBlank, hint) {
+  if (hint && hint !== 'action') return hint;
+
+  // Scene headings
+  if (/^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.|I\/E\.)/i.test(text)) return 'scene-heading';
+  if (/^(INT |EXT )/i.test(text) && text.length < 80) return 'scene-heading';
+
+  // Transitions
+  if (/^(FADE IN:|FADE OUT:|FADE TO:|CUT TO:|DISSOLVE TO:|SMASH CUT TO:|MATCH CUT TO:|JUMP CUT TO:|TIME CUT:|WIPE TO:)/.test(text)) return 'transition';
+  if (/^(FADE IN|FADE OUT|FADE TO BLACK)\.*:?$/.test(text)) return 'transition';
+
+  // Parenthetical
+  if (/^\(.*\)$/.test(text)) return 'parenthetical';
+
+  // All-caps short lines = likely character
+  if (/^[A-Z][A-Z0-9\s\.\-']+$/.test(text) && text.length < 45 && prevBlank) {
+    // Exclude common false positives
+    if (!/^(INT|EXT|THE|AND|BUT|CUT|FADE|DISSOLVE|END|ACT|SCENE|PAGE)/.test(text)) {
+      return 'character';
+    }
+  }
+
+  // High indent relative to base = probably dialogue or character
+  if (indent > baseIndent + 20) {
+    if (/^[A-Z\s]+$/.test(text) && text.length < 40) return 'character';
+    return 'dialogue';
+  }
+  if (indent > baseIndent + 10) return 'dialogue';
+
+  return 'action';
+}
+
+// ── SMART FREE REFORMAT ENGINE ──
+// Multi-pass, geometry-aware, context-sensitive. No API needed.
+function smartReformat(analysis) {
+  const raw = analysis.lines;
+  if (!raw.length) return [];
+
+  // ── PASS 1: Geometry calibration ──
+  // Find the dominant left-margin (action text indent)
+  // and measure how far character/dialogue are offset from it.
+  const indentCounts = {};
+  raw.forEach(l => { indentCounts[l.indent] = (indentCounts[l.indent] || 0) + 1; });
+  const sortedIndents = Object.entries(indentCounts)
+    .sort((a,b) => b[1]-a[1])
+    .map(([k]) => parseInt(k));
+
+  const baseIndent   = sortedIndents[0] || 0;       // most common = action/desc margin
+  const secondIndent = sortedIndents[1] || baseIndent + 8;
+  const thirdIndent  = sortedIndents[2] || baseIndent + 20;
+
+  // Character names typically sit at a deeper indent than dialogue
+  // Dialogue is typically mid-indent; action is at base.
+  // We'll score each line using multiple signals.
+
+  // ── PASS 2: Line classification ──
+  const classified = raw.map((line, i) => {
+    const t = line.text;
+    const ind = line.indent;
+    const upper = t === t.toUpperCase();
+    const short = t.length < 42;
+    const veryShort = t.length < 22;
+
+    // Hard rules (very high confidence)
+    if (/^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.|I\/E\.)\s/i.test(t)) return tag(line, 'scene-heading');
+    if (/^(INT |EXT )/i.test(t) && t.includes(' - ')) return tag(line, 'scene-heading');
+    if (/^(FADE\s*IN\s*:|FADE\s*OUT\s*:|FADE\s*TO\s*:|CUT\s*TO\s*:|DISSOLVE\s*TO\s*:|SMASH\s*CUT|MATCH\s*CUT|JUMP\s*CUT|TIME\s*CUT|WIPE\s*TO\s*:|IRIS\s*(IN|OUT))/.test(t)) return tag(line, 'transition');
+    if (/^\(.*\)$/.test(t) && t.length < 60) return tag(line, 'parenthetical');
+
+    // All-caps short line = strong character candidate
+    if (upper && short && /^[A-Z][A-Z0-9\s'\.\-\(\)]+$/.test(t)) {
+      // Exclude false positives
+      if (!/^(THE|AND|BUT|CUT|ACT|END|PAGE|CONTINUED|CONT|MORE|OVER|BACK|TITLE|MONTAGE|SERIES|LATER|CONTINUOUS|INTERCUT|SMASH|MATCH|WIPE|IRIS|ROLL|SUPER|INSERT|ANGLE|VIEW|CLOSE|WIDE|POV|ESTABLISHING|PULL|PUSH|RACK|DOLLY|PAN|TILT|ZOOM|FADE|DISSOLVE|FLASH|FREEZE|SLOW|FAST|SPLIT|DUAL)/.test(t)) {
+        return tag(line, 'character');
+      }
+    }
+
+    // Scene heading without INT/EXT if all-caps + " - DAY/NIGHT/MORNING/EVENING/DUSK/DAWN/LATER/CONTINUOUS"
+    if (upper && /\s[-–]\s*(DAY|NIGHT|MORNING|EVENING|DUSK|DAWN|LATER|CONTINUOUS|MOMENTS LATER|SAME TIME|INTERCUT)/.test(t)) {
+      return tag(line, 'scene-heading');
+    }
+
+    // Geometry-based: deeply indented relative to base
+    if (ind > baseIndent + 18) {
+      if (upper && short) return tag(line, 'character');
+      return tag(line, 'dialogue');
+    }
+    if (ind > baseIndent + 8) {
+      return tag(line, 'dialogue');
+    }
+
+    // DOCX hint fallback
+    if (line.hint && line.hint !== 'action') return tag(line, line.hint);
+
+    return tag(line, 'action');
+  });
+
+  // ── PASS 3: Context repair ──
+  // Use neighboring lines to fix classification errors.
+  const fixed = classified.map((cur, i) => {
+    const prev = classified[i - 1];
+    const next = classified[i + 1];
+    const prevType = prev?.type;
+    const nextType = next?.type;
+
+    // If prev was CHARACTER and current is ACTION → likely DIALOGUE
+    if (prevType === 'character' && cur.type === 'action') {
+      return { ...cur, type: 'dialogue' };
+    }
+
+    // If prev was CHARACTER and current is CHARACTER → prev might be wrong; keep but note
+    // If current is dialogue and next is character → that's a normal dialogue/char alternation, keep.
+
+    // If current looks like a character (all-caps short) but prev was also dialogue → DIALOGUE continuation or new character
+    if (cur.type === 'character' && prevType === 'dialogue') {
+      // If it's very short and all-caps it's likely a new character cue
+      if (cur.text.length < 30 && /^[A-Z\s]+$/.test(cur.text)) return cur; // keep as character
+      return { ...cur, type: 'dialogue' }; // otherwise treat as continued dialogue
+    }
+
+    // Parenthetical must be inside a dialogue block
+    if (cur.type === 'parenthetical') {
+      if (prevType !== 'dialogue' && prevType !== 'character') {
+        // If surrounded by dialogue context keep it, else action
+        if (nextType === 'dialogue' || prevType === 'character') return cur;
+        return { ...cur, type: 'action' };
+      }
+    }
+
+    // Transition must be standalone — if surrounded by regular action, keep; correct obvious mis-tags
+    if (cur.type === 'action' && /^(OVER BLACK|TO BLACK|THE END|TITLE CARD|SUPER:|SMASH TO BLACK)/.test(cur.text)) {
+      return { ...cur, type: 'transition' };
+    }
+
+    // "CONTINUED:" style lines
+    if (/^(CONTINUED:|CONT'D:|MORE)$/.test(cur.text)) {
+      return { ...cur, type: 'transition' };
+    }
+
+    return cur;
+  });
+
+  // ── PASS 4: Merge broken action paragraphs ──
+  // PDF extraction often splits single action paragraphs into many short lines.
+  // Re-join lines of the same type that are adjacent.
+  const merged = [];
+  let i = 0;
+  while (i < fixed.length) {
+    const cur = fixed[i];
+    if (cur.type === 'action') {
+      let combined = cur.text;
+      let j = i + 1;
+      while (j < fixed.length &&
+             fixed[j].type === 'action' &&
+             !looksLikeNewParagraph(combined, fixed[j].text)) {
+        combined += ' ' + fixed[j].text;
+        j++;
+      }
+      merged.push({ text: combined.replace(/\s+/g,' ').trim(), type: 'action' });
+      i = j;
+    } else {
+      merged.push({ text: cur.text, type: cur.type });
+      i++;
+    }
+  }
+
+  // ── PASS 5: Clean up text ──
+  return merged
+    .filter(l => l.text.trim().length > 0)
+    .map(l => ({
+      type: l.type,
+      text: cleanText(l.text, l.type)
+    }));
+}
+
+function tag(line, type) {
+  return { ...line, type };
+}
+
+function looksLikeNewParagraph(prev, next) {
+  // Heuristic: if next line starts with a capital and prev ends with sentence-ending punctuation
+  if (/[.!?]$/.test(prev.trim()) && /^[A-Z]/.test(next.trim())) return true;
+  if (next.length > 5 && next === next.toUpperCase()) return true; // all-caps = new element
+  return false;
+}
+
+function cleanText(text, type) {
+  let t = text.trim();
+  // Remove page numbers like "42." or "42" at start of line
+  t = t.replace(/^\d+\.\s*/, '');
+  // Remove "(CONTINUED)" artifacts
+  t = t.replace(/\s*\(CONTINUED\)\s*$/i, '').trim();
+  // For scene headings, ensure uppercase
+  if (type === 'scene-heading') t = t.toUpperCase();
+  // For character, ensure uppercase
+  if (type === 'character') t = t.toUpperCase();
+  // For transitions, uppercase
+  if (type === 'transition') t = t.toUpperCase();
+  return t;
+}
+
+// ── PREVIEW RENDERER ──
+function renderImportPreview(formatted) {
+  const preview = document.getElementById('import-preview');
+  const box = document.getElementById('preview-box');
+  const statsDiv = document.getElementById('import-stats');
+
+  const display = formatted.slice(0, 30);
+  const typeClass = {
+    'scene-heading': 'preview-scene',
+    'character': 'preview-char',
+    'dialogue': 'preview-dial',
+    'parenthetical': 'preview-paren',
+    'transition': 'preview-trans',
+    'centered': '',
+    'action': ''
+  };
+
+  box.innerHTML = display.map(l =>
+    `<div class="${typeClass[l.type] || ''}">${escHtml(l.text)}</div>`
+  ).join('');
+
+  if (formatted.length > 30) {
+    box.innerHTML += `<div style="color:var(--text-dim);margin-top:6px;font-style:italic">… and ${formatted.length - 30} more elements</div>`;
+  }
+
+  // Stats
+  const counts = {};
+  formatted.forEach(l => { counts[l.type] = (counts[l.type] || 0) + 1; });
+  const scenes = counts['scene-heading'] || 0;
+  const chars = new Set(formatted.filter(l => l.type === 'character').map(l => l.text.toUpperCase())).size;
+  const dialLines = counts['dialogue'] || 0;
+  statsDiv.innerHTML = `
+    <div class="istat">Elements: <span>${formatted.length}</span></div>
+    <div class="istat">Scenes: <span>${scenes}</span></div>
+    <div class="istat">Characters: <span>${chars}</span></div>
+    <div class="istat">Dialogue lines: <span>${dialLines}</span></div>
+  `;
+
+  preview.classList.add('visible');
+}
+
+function escHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── APPLY TO EDITOR ──
+function applyImport() {
+  if (!importedLines.length) return;
+
+  const page = document.getElementById('page-1');
+  page.innerHTML = '<div class="page-number">1.</div>';
+  lines = [];
+  characterNames = new Set();
+
+  importedLines.forEach(l => {
+    addLine(l.type, l.text, false);
+    if (l.type === 'character') characterNames.add(l.text.toUpperCase());
+  });
+
+  if (lines.length === 0) addLine('action', '', true);
+  else lines[0].el.focus();
+
+  updateStats();
+  updateSidebar();
+  markUnsaved();
+  closeImportModal();
+}
+</script>
+
+<script>
+
+// ═══════════════════════════════════════════════════════
+let lines = [];           // array of {el, type}
+let currentLine = null;
+let currentType = 'action';
+let savedState = '';
+let characterNames = new Set();
+let sceneHeadings = new Set(['INT. ', 'EXT. ', 'INT./EXT. ', 'EXT./INT. ']);
+let acIndex = -1;
+let acOptions = [];
+let findMatches = [];
+let findIdx = 0;
+let titlePageData = null;
+
+// Undo / Redo
+let undoStack = [];   // array of snapshots [{lines:[{type,text}], focusIdx}]
+let redoStack = [];
+let undoDebounceTimer = null;
+const UNDO_MAX = 100;
+
+// ═══════════════════════════════════════════════════════
+// ELEMENT TYPE DEFINITIONS
+// ═══════════════════════════════════════════════════════
+const ELEMENT_CYCLE = ['action','scene-heading','character','dialogue','parenthetical','transition','centered'];
+const ELEMENT_LABELS = {
+  'scene-heading': 'Scene Heading',
+  'action': 'Action',
+  'character': 'Character',
+  'parenthetical': 'Parenthetical',
+  'dialogue': 'Dialogue',
+  'transition': 'Transition',
+  'centered': 'Centered',
+};
+
+// after pressing Enter on a type, auto-advance to:
+const NEXT_TYPE = {
+  'scene-heading': 'action',
+  'action': 'action',
+  'character': 'dialogue',
+  'parenthetical': 'dialogue',
+  'dialogue': 'character',
+  'transition': 'scene-heading',
+  'centered': 'action',
+};
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  loadFromStorage();
+  if (lines.length === 0) addLine('scene-heading', '', true);
+  updateStats();
+  updateSidebar();
+  pushUndo(); // initial snapshot so Ctrl+Z always has a base state
+
+  document.getElementById('editor-wrapper').addEventListener('scroll', () => {});
+  document.addEventListener('keydown', globalKeys);
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#autocomplete')) hideAutocomplete();
+  });
+  setInterval(autoSave, 10000);
+});
+
+// ═══════════════════════════════════════════════════════
+// LINE MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function createLineEl(type, text) {
+  const el = document.createElement('div');
+  el.className = 'script-line';
+  el.dataset.type = type;
+  el.contentEditable = 'true';
+  el.spellcheck = true;
+  el.innerText = text || '';
+  // Accessibility
+  el.setAttribute('role', 'textbox');
+  el.setAttribute('aria-multiline', 'false');
+  el.setAttribute('aria-label', (ELEMENT_LABELS[type] || type) + ' line. Press Tab to change element type.');
+  // Apply current font size preference
+  if (typeof editorFontSize !== 'undefined' && editorFontSize !== 12) {
+    el.style.fontSize = editorFontSize + 'pt';
+  }
+
+  el.addEventListener('keydown', onLineKeydown);
+  el.addEventListener('input', onLineInput);
+  el.addEventListener('focus', onLineFocus);
+  el.addEventListener('blur', onLineBlur);
+  el.addEventListener('paste', onLinePaste);
+  return el;
+}
+
+function addLine(type, text, focus) {
+  const el = createLineEl(type, text || '');
+  const page = document.getElementById('page-1');
+  page.appendChild(el);
+  lines.push({ el, type });
+  if (focus) {
+    setTimeout(() => { el.focus(); placeCursorAtEnd(el); }, 10);
+  }
+  return el;
+}
+
+function insertLineAfter(refEl, type, text, focus) {
+  const idx = lines.findIndex(l => l.el === refEl);
+  const el = createLineEl(type, text || '');
+  const page = document.getElementById('page-1');
+  const refEntry = lines[idx];
+
+  if (idx >= 0 && idx < lines.length - 1) {
+    page.insertBefore(el, lines[idx + 1].el);
+    lines.splice(idx + 1, 0, { el, type });
+  } else {
+    page.appendChild(el);
+    lines.push({ el, type });
+  }
+
+  if (focus) {
+    setTimeout(() => { el.focus(); placeCursorAtEnd(el); }, 10);
+  }
+  return el;
+}
+
+function removeLine(el) {
+  const idx = lines.findIndex(l => l.el === el);
+  if (idx >= 0) {
+    lines.splice(idx, 1);
+    el.remove();
+    if (lines.length > 0) {
+      const newIdx = Math.max(0, idx - 1);
+      lines[newIdx].el.focus();
+      placeCursorAtEnd(lines[newIdx].el);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// KEY HANDLERS
+// ═══════════════════════════════════════════════════════
+function onLineKeydown(e) {
+  const el = e.currentTarget;
+  const type = el.dataset.type;
+
+  // Tab: cycle element type
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const idx = ELEMENT_CYCLE.indexOf(type);
+    const next = ELEMENT_CYCLE[(idx + 1) % ELEMENT_CYCLE.length];
+    changeLineType(el, next);
+    hideAutocomplete();
+    return;
+  }
+
+  // Enter: insert new line
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (acOptions.length > 0 && acIndex >= 0) {
+      applyAutocomplete(acOptions[acIndex]);
+      return;
+    }
+
+    // Collect current text before cursor split
+    const text = el.innerText.trim();
+
+    // Character/dialogue auto-cycle
+    let nextType = NEXT_TYPE[type] || 'action';
+
+    // If dialogue line is empty, jump back to action
+    if ((type === 'dialogue' || type === 'parenthetical') && text === '') {
+      nextType = 'action';
+    }
+
+    // Record character names on Enter from character line
+    if (type === 'character' && text) {
+      characterNames.add(text.toUpperCase());
+    }
+
+    const newEl = insertLineAfter(el, nextType, '', true);
+    changeLineType(newEl, nextType);
+    updateStats();
+    updateSidebar();
+    markUnsaved();
+    return;
+  }
+
+  // Backspace: remove empty line OR merge with previous line when at start
+  if (e.key === 'Backspace') {
+    const idx = lines.findIndex(l => l.el === el);
+    const isEmpty = el.innerText === '';
+
+    // Check if cursor is at the very beginning of the line
+    const sel = window.getSelection();
+    const atStart = sel && sel.rangeCount > 0 && sel.getRangeAt(0).startOffset === 0 &&
+      sel.getRangeAt(0).collapsed &&
+      (sel.getRangeAt(0).startContainer === el ||
+       (sel.getRangeAt(0).startContainer === el.firstChild && sel.getRangeAt(0).startOffset === 0));
+
+    if ((isEmpty || atStart) && idx > 0) {
+      e.preventDefault();
+      const prev = lines[idx - 1].el;
+      if (isEmpty) {
+        // Empty line: just remove it and focus previous
+        removeLine(el);
+        placeCursorAtEnd(prev);
+      } else {
+        // Non-empty line at cursor start: merge text into previous line
+        const currentText = el.innerText;
+        const prevText = prev.innerText;
+        // Place cursor at the join point in the previous line
+        prev.innerText = prevText + currentText;
+        // Remove current line
+        lines.splice(idx, 1);
+        el.remove();
+        // Place cursor at the join point
+        const range = document.createRange();
+        const selObj = window.getSelection();
+        const textNode = prev.firstChild || prev;
+        const offset = Math.min(prevText.length, textNode.nodeType === Node.TEXT_NODE ? textNode.length : 0);
+        try {
+          range.setStart(textNode, offset);
+          range.collapse(true);
+          selObj.removeAllRanges();
+          selObj.addRange(range);
+        } catch(err) {
+          placeCursorAtEnd(prev);
+        }
+        prev.focus();
+      }
+      updateStats();
+      updateSidebar();
+      markUnsaved();
+      return;
+    }
+  }
+
+  // Arrow up/down navigation
+  if (e.key === 'ArrowDown') {
+    if (acOptions.length > 0) {
+      e.preventDefault();
+      acIndex = Math.min(acIndex + 1, acOptions.length - 1);
+      renderAutocomplete();
+      return;
+    }
+    const idx = lines.findIndex(l => l.el === el);
+    if (idx < lines.length - 1) {
+      e.preventDefault();
+      lines[idx + 1].el.focus();
+      placeCursorAtEnd(lines[idx + 1].el);
+    }
+    return;
+  }
+  if (e.key === 'ArrowUp') {
+    if (acOptions.length > 0) {
+      e.preventDefault();
+      acIndex = Math.max(acIndex - 1, 0);
+      renderAutocomplete();
+      return;
+    }
+    const idx = lines.findIndex(l => l.el === el);
+    if (idx > 0) {
+      e.preventDefault();
+      lines[idx - 1].el.focus();
+      placeCursorAtEnd(lines[idx - 1].el);
+    }
+    return;
+  }
+
+  // Escape: close autocomplete
+  if (e.key === 'Escape') {
+    hideAutocomplete();
+    return;
+  }
+}
+
+function onLineInput(e) {
+  const el = e.currentTarget;
+  const text = el.innerText;
+  const type = el.dataset.type;
+
+  // Auto-detect scene heading start
+  if (type === 'action') {
+    if (/^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)/i.test(text)) {
+      changeLineType(el, 'scene-heading');
+    }
+  }
+
+  // Autocomplete
+  triggerAutocomplete(el);
+  updateStats();
+  updateSidebar();
+  markUnsaved();
+}
+
+function onLineFocus(e) {
+  const el = e.currentTarget;
+  if (currentLine) currentLine.classList.remove('focused-line');
+  currentLine = el;
+  el.classList.add('focused-line');
+  currentType = el.dataset.type;
+  updateElementBar();
+  updateCurrentTypeBadge();
+}
+
+function onLineBlur(e) {
+  const el = e.currentTarget;
+  const text = el.innerText.trim();
+  if (el.dataset.type === 'character' && text) {
+    characterNames.add(text.toUpperCase());
+  }
+  el.classList.remove('focused-line');
+}
+
+function onLinePaste(e) {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  document.execCommand('insertText', false, text);
+}
+
+// ═══════════════════════════════════════════════════════
+// ELEMENT TYPE
+// ═══════════════════════════════════════════════════════
+function changeLineType(el, type) {
+  el.dataset.type = type;
+  const idx = lines.findIndex(l => l.el === el);
+  if (idx >= 0) lines[idx].type = type;
+  currentType = type;
+  el.setAttribute('aria-label', (ELEMENT_LABELS[type] || type) + ' line. Press Tab to change element type.');
+  updateElementBar();
+  updateCurrentTypeBadge();
+}
+
+function setElementType(type) {
+  if (currentLine) {
+    changeLineType(currentLine, type);
+    currentLine.focus();
+  }
+  currentType = type;
+  updateElementBar();
+}
+
+function updateElementBar() {
+  document.querySelectorAll('.el-btn').forEach(btn => {
+    const active = btn.dataset.type === currentType;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTOCOMPLETE
+// ═══════════════════════════════════════════════════════
+function triggerAutocomplete(el) {
+  const type = el.dataset.type;
+  const text = el.innerText.trim().toUpperCase();
+  if (!text) { hideAutocomplete(); return; }
+
+  let options = [];
+
+  if (type === 'scene-heading') {
+    const pool = ['INT. ', 'EXT. ', 'INT./EXT. ',
+      'INT. OFFICE - DAY', 'INT. HOUSE - NIGHT', 'INT. CAR - MOVING',
+      'EXT. STREET - DAY', 'EXT. PARK - NIGHT',
+      ...Array.from(sceneHeadings)];
+    options = [...new Set(pool)].filter(s => s.toUpperCase().startsWith(text) && s.toUpperCase() !== text);
+  }
+
+  if (type === 'character') {
+    options = Array.from(characterNames).filter(n => n.startsWith(text) && n !== text);
+  }
+
+  if (options.length === 0) { hideAutocomplete(); return; }
+
+  acOptions = options.slice(0, 8);
+  acIndex = 0;
+  showAutocomplete(el);
+}
+
+function showAutocomplete(el) {
+  const ac = document.getElementById('autocomplete');
+  const rect = el.getBoundingClientRect();
+  ac.style.left = (rect.left) + 'px';
+  ac.style.top = (rect.bottom + 4) + 'px';
+  ac.style.display = 'block';
+  renderAutocomplete();
+}
+
+function renderAutocomplete() {
+  const ac = document.getElementById('autocomplete');
+  ac.innerHTML = '<div class="ac-header">Suggestions</div>' +
+    acOptions.map((o, i) =>
+      `<div class="ac-item${i === acIndex ? ' selected' : ''}" onclick="applyAutocomplete('${o.replace(/'/g,"\\'")}')">
+        ${o}
+      </div>`).join('');
+}
+
+function applyAutocomplete(value) {
+  if (!currentLine) return;
+  currentLine.innerText = value;
+  placeCursorAtEnd(currentLine);
+  hideAutocomplete();
+  if (currentLine.dataset.type === 'scene-heading') sceneHeadings.add(value);
+  updateStats();
+  updateSidebar();
+}
+
+function hideAutocomplete() {
+  document.getElementById('autocomplete').style.display = 'none';
+  acOptions = [];
+  acIndex = -1;
+}
+
+// ═══════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════
+function switchSidebarTab(tab, btn) {
+  document.querySelectorAll('.stab').forEach(t => {
+    t.classList.remove('active');
+    t.setAttribute('aria-selected', 'false');
+    t.setAttribute('tabindex', '-1');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected', 'true');
+  btn.setAttribute('tabindex', '0');
+  ['scenes','characters','notes'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? '' : 'none';
+  });
+}
+
+function updateSidebar() {
+  // Scenes
+  const sceneEls = lines.filter(l => l.type === 'scene-heading');
+  const scenesDiv = document.getElementById('tab-scenes');
+  if (sceneEls.length === 0) {
+    scenesDiv.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:8px;">No scenes yet.</div>';
+  } else {
+    scenesDiv.innerHTML = sceneEls.map((s, i) =>
+      `<div class="scene-item" onclick="scrollToLine(this)" data-idx="${lines.indexOf(s)}">
+        <span class="scene-num">${i + 1}</span>${s.el.innerText || '(empty)'}
+      </div>`
+    ).join('');
+  }
+
+  // Characters
+  const charCount = {};
+  lines.forEach(l => {
+    if (l.type === 'character' && l.el.innerText.trim()) {
+      const n = l.el.innerText.trim().toUpperCase();
+      charCount[n] = (charCount[n] || 0) + 1;
+    }
+  });
+  const charsDiv = document.getElementById('tab-characters');
+  const sorted = Object.entries(charCount).sort((a,b) => b[1]-a[1]);
+  if (sorted.length === 0) {
+    charsDiv.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:8px;">No characters yet.</div>';
+  } else {
+    charsDiv.innerHTML = sorted.map(([name, count]) =>
+      `<div class="char-item"><span>${name}</span><span class="char-count">${count} lines</span></div>`
+    ).join('');
+  }
+
+  // Update global character set
+  characterNames = new Set(Object.keys(charCount));
+}
+
+function scrollToLine(el) {
+  const idx = parseInt(el.dataset.idx);
+  if (lines[idx]) {
+    lines[idx].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    lines[idx].el.focus();
+  }
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const btn = document.getElementById('sidebar-toggle-btn');
+  sidebar.classList.toggle('collapsed');
+  const isCollapsed = sidebar.classList.contains('collapsed');
+  if (btn) btn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+}
+
+// ═══════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════
+function updateStats() {
+  const allText = lines.map(l => l.el.innerText).join('\n');
+  const words = allText.trim().split(/\s+/).filter(Boolean).length;
+  const scenes = lines.filter(l => l.type === 'scene-heading').length;
+  // Rough page estimate: ~55 lines/page
+  const totalLines = lines.length + lines.reduce((a, l) => {
+    const t = l.el.innerText;
+    return a + (t ? Math.floor(t.length / 65) : 0);
+  }, 0);
+  const pages = Math.max(1, Math.ceil(totalLines / 55));
+
+  document.getElementById('stat-words').textContent = `Words: ${words}`;
+  document.getElementById('stat-scenes').textContent = `Scenes: ${scenes}`;
+  document.getElementById('stat-pages').textContent = `Pages: ~${pages}`;
+  document.getElementById('stat-chars').textContent = `Characters: ${new Set(lines.filter(l => l.type === 'character').map(l => l.el.innerText.trim().toUpperCase())).size}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// SAVE / LOAD
+// ═══════════════════════════════════════════════════════
+function getScriptData() {
+  return {
+    title: document.getElementById('title-input').value,
+    notes: document.getElementById('notes-area').value,
+    titlePage: titlePageData,
+    lines: lines.map(l => ({ type: l.type, text: l.el.innerText }))
+  };
+}
+
+function autoSave() {
+  try {
+    localStorage.setItem('scriptforge_autosave', JSON.stringify(getScriptData()));
+    setSaved();
+  } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem('scriptforge_autosave');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    document.getElementById('title-input').value = data.title || 'Untitled';
+    document.getElementById('notes-area').value = data.notes || '';
+    titlePageData = data.titlePage || null;
+    const page = document.getElementById('page-1');
+    // clear
+    page.innerHTML = '<div class="page-number">1.</div>';
+    lines = [];
+    (data.lines || []).forEach(l => addLine(l.type, l.text, false));
+    setSaved();
+  } catch(e) {}
+}
+
+function markUnsaved() {
+  const ind = document.getElementById('save-indicator');
+  ind.textContent = '● Unsaved';
+  ind.className = 'unsaved';
+  // Debounce undo snapshots — push ~400ms after user stops typing
+  clearTimeout(undoDebounceTimer);
+  undoDebounceTimer = setTimeout(pushUndo, 400);
+}
+
+function pushUndo() {
+  const snapshot = {
+    lines: lines.map(l => ({ type: l.type, text: l.el.innerText })),
+    focusIdx: lines.findIndex(l => l.el === currentLine)
+  };
+  // Don't push duplicate of top
+  if (undoStack.length > 0) {
+    const top = undoStack[undoStack.length - 1];
+    const same = top.lines.length === snapshot.lines.length &&
+      top.lines.every((tl, i) => tl.type === snapshot.lines[i].type && tl.text === snapshot.lines[i].text);
+    if (same) return;
+  }
+  undoStack.push(snapshot);
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  redoStack = []; // new action clears redo
+}
+
+function applySnapshot(snapshot) {
+  const page = document.getElementById('page-1');
+  page.innerHTML = '<div class="page-number">1.</div>';
+  lines = [];
+  snapshot.lines.forEach(l => addLine(l.type, l.text, false));
+  const focusEl = lines[snapshot.focusIdx >= 0 ? snapshot.focusIdx : lines.length - 1];
+  if (focusEl) { focusEl.el.focus(); placeCursorAtEnd(focusEl.el); }
+  updateStats();
+  updateSidebar();
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  // Push current state to redo before undoing
+  redoStack.push({
+    lines: lines.map(l => ({ type: l.type, text: l.el.innerText })),
+    focusIdx: lines.findIndex(l => l.el === currentLine)
+  });
+  const snapshot = undoStack.pop();
+  applySnapshot(snapshot);
+  markUnsaved();
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  undoStack.push({
+    lines: lines.map(l => ({ type: l.type, text: l.el.innerText })),
+    focusIdx: lines.findIndex(l => l.el === currentLine)
+  });
+  const snapshot = redoStack.pop();
+  applySnapshot(snapshot);
+  markUnsaved();
+}
+function setSaved() {
+  const ind = document.getElementById('save-indicator');
+  ind.textContent = '● Saved';
+  ind.className = 'saved';
+}
+
+function newScript() {
+  if (!confirm('Start a new script? Unsaved changes will be lost.')) return;
+  document.getElementById('title-input').value = 'Untitled Screenplay';
+  document.getElementById('notes-area').value = '';
+  titlePageData = null;
+  const page = document.getElementById('page-1');
+  page.innerHTML = '<div class="page-number">1.</div>';
+  lines = [];
+  characterNames = new Set();
+  addLine('scene-heading', '', true);
+  updateStats();
+  updateSidebar();
+  setSaved();
+}
+
+function saveToFile() {
+  const data = getScriptData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (data.title || 'screenplay').replace(/\s+/g,'_') + '.sfx';
+  a.click();
+  setSaved();
+}
+
+function loadFromFile() {
+  document.getElementById('file-input').click();
+}
+
+function handleFileLoad(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      if (file.name.endsWith('.sfx')) {
+        const data = JSON.parse(ev.target.result);
+        document.getElementById('title-input').value = data.title || 'Untitled';
+        document.getElementById('notes-area').value = data.notes || '';
+        titlePageData = data.titlePage || null;
+        const page = document.getElementById('page-1');
+        page.innerHTML = '<div class="page-number">1.</div>';
+        lines = [];
+        (data.lines || []).forEach(l => addLine(l.type, l.text, false));
+      } else if (file.name.endsWith('.fdx')) {
+        importFDX(ev.target.result);
+      } else {
+        importFountain(ev.target.result);
+      }
+      updateStats();
+      updateSidebar();
+      setSaved();
+    } catch(err) {
+      alert('Could not load file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ═══════════════════════════════════════════════════════
+// FOUNTAIN IMPORT/EXPORT
+// ═══════════════════════════════════════════════════════
+function importFountain(text) {
+  const page = document.getElementById('page-1');
+  page.innerHTML = '<div class="page-number">1.</div>';
+  lines = [];
+  const rawLines = text.split('\n');
+  let prevBlank = true;
+  rawLines.forEach(raw => {
+    let t = raw.trimEnd();
+    let type = 'action';
+    if (t === '') { prevBlank = true; return; }
+    if (/^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)/i.test(t) && prevBlank) type = 'scene-heading';
+    else if (/^[A-Z][A-Z0-9\s\(\)]+$/.test(t) && prevBlank && t.length < 40) type = 'character';
+    else if (/^(FADE IN:|FADE OUT:|CUT TO:|DISSOLVE TO:|SMASH CUT TO:)/.test(t)) type = 'transition';
+    else if (/^\(.*\)$/.test(t)) type = 'parenthetical';
+    else type = 'action';
+    addLine(type, t, false);
+    prevBlank = false;
+  });
+  if (lines.length === 0) addLine('action','',true);
+}
+
+// ═══════════════════════════════════════════════════════
+// FDX IMPORT (Final Draft XML)
+// ═══════════════════════════════════════════════════════
+function importFDX(xmlText) {
+  const parsed = parseFDX(xmlText);
+  const page = document.getElementById('page-1');
+  page.innerHTML = '<div class="page-number">1.</div>';
+  lines = [];
+  characterNames = new Set();
+  parsed.forEach(l => {
+    addLine(l.type, l.text, false);
+    if (l.type === 'character') characterNames.add(l.text.toUpperCase());
+  });
+  if (lines.length === 0) addLine('action', '', true);
+}
+
+function parseFDX(xmlText) {
+  // FDX is XML — parse it natively in the browser
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'application/xml');
+
+  // Check for parse errors
+  const err = doc.querySelector('parsererror');
+  if (err) throw new Error('Invalid FDX file: ' + err.textContent.slice(0, 100));
+
+  // Map Final Draft element types → our types
+  const typeMap = {
+    'Scene Heading':   'scene-heading',
+    'Action':          'action',
+    'Character':       'character',
+    'Dialogue':        'dialogue',
+    'Parenthetical':   'parenthetical',
+    'Transition':      'transition',
+    'Shot':            'scene-heading',   // treat Shot like a scene heading
+    'General':         'action',
+    'Centered':        'centered',
+    'Cast List':       'action',
+    'More':            'action',
+    'Cont':            'action',
+  };
+
+  const result = [];
+
+  // Each <Paragraph> in FDX holds one screenplay element
+  const paragraphs = doc.querySelectorAll('Paragraph');
+  paragraphs.forEach(para => {
+    const fdxType = para.getAttribute('Type') || 'Action';
+    const ourType = typeMap[fdxType] || 'action';
+
+    // Collect all text from <Text> children (FDX can split one line into styled runs)
+    let text = '';
+    para.querySelectorAll('Text').forEach(textNode => {
+      text += textNode.textContent;
+    });
+
+    text = text.trim();
+    if (!text) return; // skip empty paragraphs
+
+    result.push({ type: ourType, text });
+  });
+
+  return result;
+}
+
+function exportFountain() {
+  let out = '';
+  if (titlePageData) {
+    out += `Title: ${titlePageData.title}\nCredit: Written by\nAuthor: ${titlePageData.author}\n\n`;
+  }
+  lines.forEach(l => {
+    const t = l.el.innerText;
+    if (l.type === 'scene-heading') out += '\n' + t.toUpperCase() + '\n\n';
+    else if (l.type === 'character') out += '\n' + t.toUpperCase() + '\n';
+    else if (l.type === 'transition') out += '\n' + t.toUpperCase() + '\n\n';
+    else out += t + '\n';
+  });
+  const title = document.getElementById('title-input').value || 'screenplay';
+  const blob = new Blob([out], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = title.replace(/\s+/g,'_') + '.fountain';
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// FDX EXPORT (Final Draft XML)
+// ═══════════════════════════════════════════════════════
+function exportFDX() {
+  const title = document.getElementById('title-input').value || 'Untitled Screenplay';
+
+  // Map our element types to Final Draft Paragraph Type attributes
+  const typeMap = {
+    'scene-heading': 'Scene Heading',
+    'action':        'Action',
+    'character':     'Character',
+    'dialogue':      'Dialogue',
+    'parenthetical': 'Parenthetical',
+    'transition':    'Transition',
+    'centered':      'General',
+  };
+
+  // Build the <Content> paragraphs
+  let paragraphs = '';
+
+  // Title page as a centered paragraph if present
+  if (titlePageData && titlePageData.title) {
+    const esc = fdxEsc(titlePageData.title);
+    paragraphs += `\n      <Paragraph Type="General" Alignment="Center"><Text>${esc}</Text></Paragraph>`;
+    if (titlePageData.author) {
+      paragraphs += `\n      <Paragraph Type="General" Alignment="Center"><Text>Written by ${fdxEsc(titlePageData.author)}</Text></Paragraph>`;
+    }
+    if (titlePageData.based) {
+      paragraphs += `\n      <Paragraph Type="General" Alignment="Center"><Text>${fdxEsc(titlePageData.based)}</Text></Paragraph>`;
+    }
+    paragraphs += `\n      <Paragraph Type="General"><Text></Text></Paragraph>`;
+  }
+
+  lines.forEach(l => {
+    const text = l.el.innerText.trim();
+    if (!text) return;
+    const fdxType = typeMap[l.type] || 'Action';
+    const esc = fdxEsc(text);
+    paragraphs += `\n      <Paragraph Type="${fdxType}"><Text>${esc}</Text></Paragraph>`;
+  });
+
+  const xml = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<FinalDraft DocumentType="Script" Template="No" Version="2">
+  <Content>${paragraphs}
+  </Content>
+  <TitlePage>
+    <Content>
+      <Paragraph Alignment="Center"><Text>${fdxEsc(titlePageData ? titlePageData.title : title)}</Text></Paragraph>
+      ${titlePageData && titlePageData.author ? `<Paragraph Alignment="Center"><Text>Written by ${fdxEsc(titlePageData.author)}</Text></Paragraph>` : ''}
+      ${titlePageData && titlePageData.contact ? `<Paragraph Alignment="Center"><Text>${fdxEsc(titlePageData.contact)}</Text></Paragraph>` : ''}
+    </Content>
+  </TitlePage>
+  <HeaderAndFooter FooterFirstPage="No" FooterVisible="No" HeaderFirstPage="No" HeaderVisible="Yes" StartingPage="1">
+    <Header>
+      <Paragraph><Text> </Text></Paragraph>
+    </Header>
+  </HeaderAndFooter>
+</FinalDraft>`;
+
+  const blob = new Blob([xml], { type: 'application/xml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = title.replace(/\s+/g, '_') + '.fdx';
+  a.click();
+}
+
+function fdxEsc(str) {
+  return (str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+// ═══════════════════════════════════════════════════════
+// PDF EXPORT — full script via jsPDF
+// ═══════════════════════════════════════════════════════
+async function exportPDF() {
+  // Dynamically load jsPDF if not already present
+  if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  const { jsPDF } = window.jspdf || window;
+
+  const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+
+  // Page dimensions (letter: 612 x 792 pt)
+  const pageW = 612, pageH = 792;
+  const marginTop = 72, marginBottom = 72, marginLeft = 108, marginRight = 72;
+  const contentW = pageW - marginLeft - marginRight;
+  const fontSize = 12;
+  const lineH = 14;
+
+  const indent = {
+    'scene-heading':  0,
+    'action':         0,
+    'character':      216,
+    'parenthetical':  144,
+    'dialogue':       108,
+    'transition':     0,
+    'centered':       0,
+  };
+  const rightLimit = {
+    'dialogue':       contentW - 72,
+    'parenthetical':  contentW - 72,
+  };
+
+  let y = marginTop + 24;
+  let pageNum = 1;
+
+  function drawPageNum(n) {
+    doc.setFont('Courier', 'normal');
+    doc.setFontSize(fontSize);
+    doc.text(n + '.', pageW - marginRight, marginTop - 12, { align: 'right' });
+  }
+
+  function spaceBefore(type) {
+    if (type === 'scene-heading') return lineH * 2;
+    if (type === 'action') return lineH;
+    if (type === 'character') return lineH;
+    if (type === 'transition') return lineH;
+    return 0;
+  }
+
+  drawPageNum(pageNum);
+
+  // Title page
+  if (titlePageData && titlePageData.title) {
+    doc.setFont('Courier', 'bold');
+    doc.setFontSize(fontSize);
+    const ty = pageH / 2 - 40;
+    doc.text(titlePageData.title.toUpperCase(), pageW / 2, ty, { align: 'center' });
+    if (titlePageData.author) {
+      doc.setFont('Courier', 'normal');
+      doc.text('Written by', pageW / 2, ty + lineH * 2, { align: 'center' });
+      doc.text(titlePageData.author, pageW / 2, ty + lineH * 3, { align: 'center' });
+    }
+    if (titlePageData.based) {
+      doc.setFont('Courier', 'normal');
+      doc.text(titlePageData.based, pageW / 2, ty + lineH * 5, { align: 'center' });
+    }
+    if (titlePageData.contact) {
+      doc.setFont('Courier', 'normal');
+      doc.text(titlePageData.contact, marginLeft, pageH - marginBottom);
+    }
+    doc.addPage();
+    pageNum++;
+    y = marginTop + 24;
+    drawPageNum(pageNum);
+  }
+
+  lines.forEach(l => {
+    const type = l.type;
+    const rawText = l.el.innerText.trim();
+    if (!rawText) return;
+
+    const displayText = (type === 'scene-heading' || type === 'character' || type === 'transition')
+      ? rawText.toUpperCase() : rawText;
+
+    if (type === 'scene-heading' || type === 'character') {
+      doc.setFont('Courier', 'bold');
+    } else {
+      doc.setFont('Courier', 'normal');
+    }
+    doc.setFontSize(fontSize);
+
+    y += spaceBefore(type);
+
+    const elIndent = indent[type] || 0;
+    const maxW = (rightLimit[type] || contentW) - elIndent;
+    const x = marginLeft + elIndent;
+
+    const textLines = doc.splitTextToSize(displayText, maxW);
+
+    textLines.forEach(tl => {
+      if (y + lineH > pageH - marginBottom) {
+        doc.addPage();
+        pageNum++;
+        y = marginTop + 24;
+        drawPageNum(pageNum);
+        if (type === 'scene-heading' || type === 'character') {
+          doc.setFont('Courier', 'bold');
+        } else {
+          doc.setFont('Courier', 'normal');
+        }
+        doc.setFontSize(fontSize);
+      }
+
+      if (type === 'transition') {
+        doc.text(tl, pageW - marginRight, y, { align: 'right' });
+      } else if (type === 'centered') {
+        doc.text(tl, pageW / 2, y, { align: 'center' });
+      } else {
+        doc.text(tl, x, y);
+      }
+      y += lineH;
+    });
+  });
+
+  const title = document.getElementById('title-input').value || 'screenplay';
+  doc.save(title.replace(/\s+/g,'_') + '.pdf');
+}
+
+// ═══════════════════════════════════════════════════════
+// TITLE PAGE
+// ═══════════════════════════════════════════════════════
+function openTitlePageModal() {
+  if (titlePageData) {
+    document.getElementById('tp-title').value = titlePageData.title || '';
+    document.getElementById('tp-author').value = titlePageData.author || '';
+    document.getElementById('tp-based').value = titlePageData.based || '';
+    document.getElementById('tp-contact').value = titlePageData.contact || '';
+  } else {
+    document.getElementById('tp-title').value = document.getElementById('title-input').value || '';
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeTitlePageModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+function insertTitlePage() {
+  titlePageData = {
+    title: document.getElementById('tp-title').value,
+    author: document.getElementById('tp-author').value,
+    based: document.getElementById('tp-based').value,
+    contact: document.getElementById('tp-contact').value,
+  };
+  closeTitlePageModal();
+  markUnsaved();
+  alert('Title page saved! It will appear when you export to PDF or Fountain.');
+}
+
+// ═══════════════════════════════════════════════════════
+// FIND / REPLACE
+// ═══════════════════════════════════════════════════════
+function toggleFindBar() {
+  document.getElementById('find-bar').classList.toggle('open');
+  if (document.getElementById('find-bar').classList.contains('open')) {
+    document.getElementById('find-input').focus();
+  }
+}
+function closeFindBar() {
+  document.getElementById('find-bar').classList.remove('open');
+  clearHighlights();
+}
+
+function findAll() {
+  clearHighlights();
+  const q = document.getElementById('find-input').value;
+  if (!q) return [];
+  findMatches = [];
+  lines.forEach((l, li) => {
+    const text = l.el.innerText;
+    let idx = 0;
+    while (true) {
+      const pos = text.toLowerCase().indexOf(q.toLowerCase(), idx);
+      if (pos === -1) break;
+      findMatches.push({ lineIdx: li, pos, len: q.length });
+      idx = pos + 1;
+    }
+  });
+  document.getElementById('find-status').textContent = `${findMatches.length} match(es)`;
+  return findMatches;
+}
+
+function findNext() {
+  findAll();
+  if (findMatches.length === 0) return;
+  findIdx = (findIdx + 1) % findMatches.length;
+  scrollToMatch(findMatches[findIdx]);
+}
+
+function findPrev() {
+  findAll();
+  if (findMatches.length === 0) return;
+  findIdx = (findIdx - 1 + findMatches.length) % findMatches.length;
+  scrollToMatch(findMatches[findIdx]);
+}
+
+function scrollToMatch(match) {
+  if (!match) return;
+  const el = lines[match.lineIdx].el;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.focus();
+}
+
+function clearHighlights() {
+  findMatches = [];
+  findIdx = 0;
+}
+
+function replaceOne() {
+  const q = document.getElementById('find-input').value;
+  const r = document.getElementById('replace-input').value;
+  if (!q) return;
+  findAll();
+  if (findMatches.length === 0) return;
+  const match = findMatches[findIdx];
+  const el = lines[match.lineIdx].el;
+  const text = el.innerText;
+  const before = text.slice(0, match.pos);
+  const after = text.slice(match.pos + match.len);
+  el.innerText = before + r + after;
+  markUnsaved();
+  findNext();
+}
+
+function replaceAll() {
+  const q = document.getElementById('find-input').value;
+  const r = document.getElementById('replace-input').value;
+  if (!q) return;
+  lines.forEach(l => {
+    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+    if (re.test(l.el.innerText)) {
+      l.el.innerText = l.el.innerText.replace(re, r);
+    }
+  });
+  document.getElementById('find-status').textContent = 'All replaced';
+  markUnsaved();
+  updateStats();
+}
+
+// ═══════════════════════════════════════════════════════
+// GLOBAL KEY SHORTCUTS
+// ═══════════════════════════════════════════════════════
+function globalKeys(e) {
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+  if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); return; }
+  if (ctrl && e.key === 's') { e.preventDefault(); autoSave(); return; }
+  if (ctrl && e.key === 'f') { e.preventDefault(); toggleFindBar(); return; }
+  if (ctrl && e.key === 'n') { e.preventDefault(); newScript(); return; }
+}
+
+// ═══════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════
+function toggleDark() {
+  document.body.classList.toggle('light-mode');
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function placeCursorAtEnd(el) {
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+// ═══════════════════════════════════════════════════════
+// ACCESSIBILITY HELPERS
+// ═══════════════════════════════════════════════════════
+
+// Announce message to screen readers via aria-live region
+function srAnnounce(msg) {
+  const el = document.getElementById('sr-live');
+  if (!el) return;
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
+// Update the status bar element type badge
+function updateCurrentTypeBadge() {
+  const badge = document.getElementById('current-type-badge');
+  if (badge) badge.textContent = ELEMENT_LABELS[currentType] || currentType;
+}
+
+// Adjustable editor font size (persisted in localStorage)
+let editorFontSize = 12;
+function changeEditorFontSize(delta) {
+  editorFontSize = Math.max(10, Math.min(24, editorFontSize + delta));
+  document.querySelectorAll('.script-line').forEach(el => {
+    el.style.fontSize = editorFontSize + 'pt';
+  });
+  const label = document.getElementById('font-size-label');
+  if (label) label.textContent = editorFontSize + 'pt';
+  try { localStorage.setItem('scriptforge_fontsize', editorFontSize); } catch(e) {}
+  srAnnounce('Font size changed to ' + editorFontSize + ' points');
+}
+
+// Keyboard navigation for sidebar tabs (arrow keys per ARIA tabs pattern)
+function handleTabKey(e, btn) {
+  const tabs = Array.from(document.querySelectorAll('.stab'));
+  const idx = tabs.indexOf(btn);
+  if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    const next = tabs[(idx + 1) % tabs.length];
+    next.focus(); next.click();
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
+    prev.focus(); prev.click();
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    btn.click();
+  }
+}
+
+// Restore font size on load
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const saved = localStorage.getItem('scriptforge_fontsize');
+    if (saved) { editorFontSize = parseInt(saved) || 12; }
+  } catch(e) {}
+  const label = document.getElementById('font-size-label');
+  if (label) label.textContent = editorFontSize + 'pt';
+});
+
+// Patch insertLineAfter / addLine so new lines also get font size applied
+const _origAddLine = addLine;
+// Override createLineEl to apply current font size to new lines
+const _createLineElOrig = createLineEl;
+
+// Wrap scene-item clicks to make keyboard accessible too
+function updateSidebarA11y() {
+  document.querySelectorAll('.scene-item').forEach(item => {
+    if (!item.getAttribute('tabindex')) {
+      item.setAttribute('tabindex', '0');
+      item.setAttribute('role', 'button');
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); }
+      });
+    }
+  });
+}
+
+// Patch updateSidebar to also run a11y fixup
+const _origUpdateSidebar = updateSidebar;
+function updateSidebar() {
+  _origUpdateSidebar();
+  updateSidebarA11y();
+}
+
+// Patch openTitlePageModal to trap focus inside dialog
+function openTitlePageModal() {
+  if (titlePageData) {
+    document.getElementById('tp-title').value = titlePageData.title || '';
+    document.getElementById('tp-author').value = titlePageData.author || '';
+    document.getElementById('tp-based').value = titlePageData.based || '';
+    document.getElementById('tp-contact').value = titlePageData.contact || '';
+  } else {
+    document.getElementById('tp-title').value = document.getElementById('title-input').value || '';
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('tp-title').focus(), 50);
+}
+
+// Escape key closes modals
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('modal-overlay').classList.contains('open')) closeTitlePageModal();
+    if (document.getElementById('import-overlay').classList.contains('open')) closeImportModal();
+  }
+});
+
+const printStyle = document.createElement('style');
+printStyle.textContent = `
+@media print {
+  #toolbar, #element-bar, #sidebar, #statusbar, #autocomplete, #find-bar, #modal-overlay { display: none !important; }
+  body { background: white; }
+  #main { display: block; }
+  #editor-wrapper { overflow: visible; padding: 0; background: white; }
+  #page-container { max-width: none; }
+  .page { box-shadow: none; margin: 0; padding: 96px 96px 96px 144px; page-break-after: always; }
+  .script-line[contenteditable] { outline: none; }
+}`;
+document.head.appendChild(printStyle);
+</script>
+</body>
+</html>
